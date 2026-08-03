@@ -7,4 +7,4 @@ Allow: /features
 Disallow: /api/
 Disallow: /admin/
 
-Sitemap: https://date.pulse.com/sitemap.xml
+Sitemap: https://hook.nexus.com/sitemap.xml
