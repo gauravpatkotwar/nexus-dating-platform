@@ -1,0 +1,10 @@
+# Surface Web Robots File for Nexus Dating SaaS Platform
+User-agent: *
+Allow: /
+Allow: /discover
+Allow: /communities
+Allow: /features
+Disallow: /api/
+Disallow: /admin/
+
+Sitemap: https://date.pulse.com/sitemap.xml

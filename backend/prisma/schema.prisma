@@ -1,0 +1,247 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  USER
+  MODERATOR
+  ADMIN
+}
+
+enum RevealStatus {
+  LOCKED
+  PENDING_USER_B
+  REVEALED
+}
+
+enum VerificationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model User {
+  id               String           @id @default(uuid())
+  email            String           @unique
+  passwordHash     String
+  isVerified18     Boolean          @default(false)
+  role             Role             @default(USER)
+  coinsBalance     Int              @default(250)
+  isVip            Boolean          @default(false)
+  vipExpiresAt     DateTime?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  profile          Profile?
+  avatar           Avatar?
+  photos           Photo[]
+  sentMatches      Match[]          @relation("UserA")
+  receivedMatches  Match[]          @relation("UserB")
+  messages         Message[]
+  posts            Post[]
+  comments         Comment[]
+  hostedEvents     Event[]
+  rsvps            EventRSVP[]
+  transactions     Transaction[]
+  filedReports     Report[]         @relation("Reporter")
+  receivedReports  Report[]         @relation("Reported")
+  verifications    Verification[]
+  notifications    Notification[]
+}
+
+model Profile {
+  id               String   @id @default(uuid())
+  userId           String   @unique
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  username         String   @unique
+  age              Int
+  gender           String
+  orientation      String
+  relationshipGoal String
+  bio              String
+  locationName     String
+  latitude         Float?
+  longitude        Float?
+  lifestyle        String[]
+  interests        String[]
+  instagramHandle  String?
+  voiceIntroUrl    String?
+  mood             String?  @default("Exploring NEXUS")
+  isIncognito      Boolean  @default(false)
+  updatedAt        DateTime @updatedAt
+}
+
+model Avatar {
+  id          String   @id @default(uuid())
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  theme       String   @default("cyberpunk")
+  hairStyle   String   @default("neon-spikes")
+  hairColor   String   @default("#06B6D4")
+  eyeColor    String   @default("#7C3AED")
+  skinTone    String   @default("#F3D0D7")
+  accessory   String   @default("cyber-viser")
+  outfitColor String   @default("#1E293B")
+  background  String   @default("bg-gradient")
+  frame       String   @default("neon-cyan")
+  updatedAt   DateTime @updatedAt
+}
+
+model Photo {
+  id             String   @id @default(uuid())
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  url            String
+  isPrimary      Boolean  @default(false)
+  isApproved     Boolean  @default(false)
+  createdAt      DateTime @default(now())
+}
+
+model Match {
+  id                String       @id @default(uuid())
+  userAId           String
+  userA             User         @relation("UserA", fields: [userAId], references: [id])
+  userBId           String
+  userB             User         @relation("UserB", fields: [userBId], references: [id])
+  compatibility     Int          @default(85)
+  userARevealed     Boolean      @default(false)
+  userBRevealed     Boolean      @default(false)
+  revealStatus      RevealStatus @default(LOCKED)
+  icebreakerUnlocked Boolean     @default(false)
+  createdAt         DateTime     @default(now())
+  messages          Message[]
+  icebreakers       Icebreaker[]
+}
+
+model Icebreaker {
+  id           String   @id @default(uuid())
+  matchId      String
+  match        Match    @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  question     String
+  optionA      String
+  optionB      String
+  userAAnswer  String?
+  userBAnswer  String?
+  isUnlocked   Boolean  @default(false)
+  createdAt    DateTime @default(now())
+}
+
+model Message {
+  id                String    @id @default(uuid())
+  matchId           String
+  match             Match     @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  senderId          String
+  sender            User      @relation(fields: [senderId], references: [id])
+  text              String?
+  voiceUrl          String?
+  imageUrl          String?
+  disappearingTimer String?   @default("off")
+  readAt            DateTime?
+  createdAt         DateTime  @default(now())
+}
+
+model Community {
+  id          String   @id @default(uuid())
+  title       String
+  category    String
+  description String
+  icon        String
+  createdAt   DateTime @default(now())
+  posts       Post[]
+}
+
+model Post {
+  id          String    @id @default(uuid())
+  communityId String
+  community   Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  authorId    String
+  author      User      @relation(fields: [authorId], references: [id])
+  title       String
+  content     String
+  upvotes     Int       @default(0)
+  createdAt   DateTime  @default(now())
+  comments    Comment[]
+}
+
+model Comment {
+  id        String   @id @default(uuid())
+  postId    String
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id])
+  content   String
+  createdAt DateTime @default(now())
+}
+
+model Event {
+  id            String      @id @default(uuid())
+  title         String
+  category      String
+  date          String
+  time          String
+  location      String
+  hostId        String
+  host          User        @relation(fields: [hostId], references: [id])
+  capacity      Int         @default(30)
+  badge         String      @default("Community Event")
+  createdAt     DateTime    @default(now())
+  rsvps         EventRSVP[]
+}
+
+model EventRSVP {
+  id        String   @id @default(uuid())
+  eventId   String
+  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([eventId, userId])
+}
+
+model Transaction {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  amountCoins Int
+  type        String
+  description String
+  createdAt   DateTime @default(now())
+}
+
+model Report {
+  id             String   @id @default(uuid())
+  reporterId     String
+  reporter       User     @relation("Reporter", fields: [reporterId], references: [id])
+  reportedUserId String
+  reportedUser   User     @relation("Reported", fields: [reportedUserId], references: [id])
+  reason         String
+  status         String   @default("pending")
+  createdAt      DateTime @default(now())
+}
+
+model Verification {
+  id          String             @id @default(uuid())
+  userId      String
+  user        User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  docType     String
+  docUrl      String
+  status      VerificationStatus @default(PENDING)
+  createdAt   DateTime           @default(now())
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  body      String
+  type      String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
