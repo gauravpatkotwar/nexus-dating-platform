@@ -3,8 +3,9 @@ const path = require('path');
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  output: 'export',
+  distDir: 'out',
   outputFileTracingRoot: path.join(__dirname),
-  swcMinify: false,
   typescript: {
     ignoreBuildErrors: true,
   },
